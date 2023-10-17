@@ -3,32 +3,55 @@ import math
 
 import hydra
 import torch
-import argparse
-import time
-from pathlib import Path
-
 import cv2
-import torch
-import torch.backends.cudnn as cudnn
+
 from numpy import random
 from ultralytics.yolo.engine.predictor import BasePredictor
 from ultralytics.yolo.utils import DEFAULT_CONFIG, ROOT, ops
 from ultralytics.yolo.utils.checks import check_imgsz
 from ultralytics.yolo.utils.plotting import Annotator, colors, save_one_box
-
-import cv2
 from deep_sort_pytorch.utils.parser import get_config
 from deep_sort_pytorch.deep_sort import DeepSort
 from collections import deque
 import numpy as np
+
+# Constants
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
+line = [(430, 325), (1555, 490)]
+ppm = 8  # Pixels per meter
+time_constant = 15 * 3.6  # Used in speed estimation
+
+# Data structures
 data_deque = {}
-
-deepsort = None
 object_counter = {}
-
-line = [(895, 390), (1520, 495)]
+object_counter1 = {}
 speed_line_queue = {}
+
+# Initialize deepsort just once
+cfg_deep = get_config()
+cfg_deep.merge_from_file("deep_sort_pytorch/configs/deep_sort.yaml")
+deepsort = DeepSort(
+    cfg_deep.DEEPSORT.REID_CKPT,
+    max_dist=cfg_deep.DEEPSORT.MAX_DIST,
+    min_confidence=cfg_deep.DEEPSORT.MIN_CONFIDENCE,
+    nms_max_overlap=cfg_deep.DEEPSORT.NMS_MAX_OVERLAP,
+    max_iou_distance=cfg_deep.DEEPSORT.MAX_IOU_DISTANCE,
+    max_age=cfg_deep.DEEPSORT.MAX_AGE,
+    n_init=cfg_deep.DEEPSORT.N_INIT,
+    nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
+    use_cuda=True,
+)
+
+
+def estimatespeed(Location1, Location2):
+    # Euclidean Distance Formula
+    d_pixel = math.sqrt(math.pow(Location2[0] - Location1[0], 2) + math.pow(Location2[1] - Location1[1], 2))
+    # defining thr pixels per meter
+    d_meters = d_pixel/ppm
+    # distance = speed/time
+    speed = d_meters * time_constant
+
+    return int(speed)
 
 
 def init_tracker():
@@ -36,11 +59,11 @@ def init_tracker():
     cfg_deep = get_config()
     cfg_deep.merge_from_file("deep_sort_pytorch/configs/deep_sort.yaml")
 
-    deepsort = DeepSort(cfg_deep.DEEPSORT.REID_CKPT,
-                        max_dist=cfg_deep.DEEPSORT.MAX_DIST, min_confidence=cfg_deep.DEEPSORT.MIN_CONFIDENCE,
-                        nms_max_overlap=cfg_deep.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg_deep.DEEPSORT.MAX_IOU_DISTANCE,
-                        max_age=cfg_deep.DEEPSORT.MAX_AGE, n_init=cfg_deep.DEEPSORT.N_INIT, nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
-                        use_cuda=True)
+    # deepsort = DeepSort(cfg_deep.DEEPSORT.REID_CKPT,
+    #                     max_dist=cfg_deep.DEEPSORT.MAX_DIST, min_confidence=cfg_deep.DEEPSORT.MIN_CONFIDENCE,
+    #                     nms_max_overlap=cfg_deep.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg_deep.DEEPSORT.MAX_IOU_DISTANCE,
+    #                     max_age=cfg_deep.DEEPSORT.MAX_AGE, n_init=cfg_deep.DEEPSORT.N_INIT, nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
+    #                     use_cuda=True)
 ##########################################################################################
 
 
@@ -80,6 +103,8 @@ def compute_color_for_labels(label):
         color = (222, 82, 175)
     elif label == 3:  # Motobike
         color = (0, 204, 255)
+    # elif label == 5:  # Bus
+    #     color = (0, 149, 255)
     else:
         color = [int((p * (label ** 2 - label + 1)) % 255) for p in palette]
     return tuple(color)
@@ -131,22 +156,34 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
-def estimateSpeed(location1, location2):
-    # using euclidean distance formula
-    d_pixels = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
-    ppm = 8  # Pixels per Meter (can change it to be dynamic)
-    d_meters = d_pixels / ppm
-    time_constant = 15 * 3.6  # fix value
-    speed = d_meters * time_constant
-    return int(speed)
-
-
 def intersect(A, B, C, D):
     return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
 
 
 def ccw(A, B, C):
     return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+
+def get_direction(point1, point2):
+    direction_str = ""
+
+    # calculate y axis direction
+    if point1[1] > point2[1]:
+        direction_str += "South"
+    elif point1[1] < point2[1]:
+        direction_str += "North"
+    else:
+        direction_str += ""
+
+    # calculate x axis direction
+    if point1[0] > point2[0]:
+        direction_str += "East"
+    elif point1[0] < point2[0]:
+        direction_str += "West"
+    else:
+        direction_str += ""
+
+    return direction_str
 
 
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
@@ -185,19 +222,24 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         # add center to buffer
         data_deque[id].appendleft(center)
         if len(data_deque[id]) >= 2:
-
+            direction = get_direction(data_deque[id][0], data_deque[id][1])
+            object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
+            speed_line_queue[id].append(object_speed)
             if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
                 cv2.line(img, line[0], line[1], (255, 255, 255), 3)
-                obj_speed = estimateSpeed(data_deque[id][1], data_deque[id][0])
-                speed_line_queue[id].append(obj_speed)  # add speed to queue
-                if obj_name not in object_counter:
-                    object_counter[obj_name] = 1
-                else:
-                    object_counter[obj_name] += 1
+                if "South" in direction:
+                    if obj_name not in object_counter:
+                        object_counter[obj_name] = 1
+                    else:
+                        object_counter[obj_name] += 1
+                if "North" in direction:
+                    if obj_name not in object_counter1:
+                        object_counter1[obj_name] = 1
+                    else:
+                        object_counter1[obj_name] += 1
 
         try:
-            label = label + " " + str(sum(speed_line_queue[id]) //
-                                      len(speed_line_queue[id])) + "km/h"  # add speed to label
+            label = label + " " + str(sum(speed_line_queue[id])//len(speed_line_queue[id])) + "km/h"  # add speed to label
         except:
             pass
         UI_box(box, img, label=label, color=color, line_thickness=2)
@@ -210,11 +252,22 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
             thickness = int(np.sqrt(64 / float(i + i)) * 1.5)
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
-    for idx, (key, value) in enumerate(object_counter.items()):
-        cnt_str = str(key) + ": " + str(value)
-        cv2.line(img, (width - 150, 25 + (idx * 40)), (width, 25 + (idx * 40)), [85, 45, 255], 30)
-        cv2.putText(img, cnt_str, (width - 150, 35 + (idx * 40)), 0, 1,
-                    [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+
+    # 4. Display Count in top right corner
+        for idx, (key, value) in enumerate(object_counter1.items()):
+            cnt_str = str(key) + ":" + str(value)
+            cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
+            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.line(img, (width - 150, 65 + (idx*40)), (width, 65 + (idx*40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str, (width - 150, 75 + (idx*40)), 0, 1, [255, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+
+        for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str1 = str(key) + ":" + str(value)
+            cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
+            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.line(img, (20, 65 + (idx*40)), (127, 65 + (idx*40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str1, (11, 75 + (idx*40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+
     return img
 
 
@@ -275,30 +328,21 @@ class DetectionPredictor(BasePredictor):
         xywh_bboxs = []
         confs = []
         oids = []
-        outputs = []
         for *xyxy, conf, cls in reversed(det):
-            x_c, y_c, bbox_w, bbox_h = xyxy_to_xywh(*xyxy)
-            xywh_obj = [x_c, y_c, bbox_w, bbox_h]
-            xywh_bboxs.append(xywh_obj)
+            xywh_bboxs.append(xyxy_to_xywh(*xyxy))
             confs.append([conf.item()])
             oids.append(int(cls))
-        xywhs = torch.Tensor(xywh_bboxs)
-        confss = torch.Tensor(confs)
 
-        outputs = deepsort.update(xywhs, confss, oids, im0)
+        outputs = deepsort.update(torch.Tensor(xywh_bboxs), torch.Tensor(confs), oids, im0)
         if len(outputs) > 0:
-            bbox_xyxy = outputs[:, :4]
-            identities = outputs[:, -2]
-            object_id = outputs[:, -1]
-
-            draw_boxes(im0, bbox_xyxy, self.model.names, object_id, identities)
+            draw_boxes(im0, outputs[:, :4], self.model.names, outputs[:, -1], outputs[:, -2])
 
         return log_string
 
 
 @hydra.main(version_base=None, config_path=str(DEFAULT_CONFIG.parent), config_name=DEFAULT_CONFIG.name)
 def predict(cfg):
-    init_tracker()
+    # init_tracker()
     cfg.model = cfg.model or "yolov8n.pt"
     cfg.imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
     cfg.source = cfg.source if cfg.source is not None else ROOT / "assets"
