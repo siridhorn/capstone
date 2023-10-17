@@ -17,7 +17,8 @@ import numpy as np
 
 # Constants
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
-line = [(430, 325), (1555, 490)]
+line1 = [(895, 390), (1555, 490)]
+line2 = [(430, 325), (895, 390)]
 ppm = 8  # Pixels per meter
 time_constant = 15 * 3.6  # Used in speed estimation
 
@@ -47,7 +48,7 @@ def estimatespeed(Location1, Location2):
     # Euclidean Distance Formula
     d_pixel = math.sqrt(math.pow(Location2[0] - Location1[0], 2) + math.pow(Location2[1] - Location1[1], 2))
     # defining thr pixels per meter
-    d_meters = d_pixel/ppm
+    d_meters = d_pixel / ppm
     # distance = speed/time
     speed = d_meters * time_constant
 
@@ -187,7 +188,8 @@ def get_direction(point1, point2):
 
 
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
-    cv2.line(img, line[0], line[1], (46, 162, 112), 3)
+    cv2.line(img, line1[0], line1[1], (46, 162, 112), 3)
+    cv2.line(img, line2[0], line2[1], (0, 0, 200), 3)
 
     height, width, _ = img.shape
     # remove tracked point from buffer if object is lost
@@ -222,24 +224,26 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         # add center to buffer
         data_deque[id].appendleft(center)
         if len(data_deque[id]) >= 2:
-            direction = get_direction(data_deque[id][0], data_deque[id][1])
+            # direction = get_direction(data_deque[id][0], data_deque[id][1])
             object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
             speed_line_queue[id].append(object_speed)
-            if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
-                cv2.line(img, line[0], line[1], (255, 255, 255), 3)
-                if "South" in direction:
-                    if obj_name not in object_counter:
-                        object_counter[obj_name] = 1
-                    else:
-                        object_counter[obj_name] += 1
-                if "North" in direction:
-                    if obj_name not in object_counter1:
-                        object_counter1[obj_name] = 1
-                    else:
-                        object_counter1[obj_name] += 1
+            if intersect(data_deque[id][0], data_deque[id][1], line1[0], line1[1]):
+                cv2.line(img, line1[0], line1[1], (255, 255, 255), 3)
+                if obj_name not in object_counter:
+                    object_counter[obj_name] = 1
+                else:
+                    object_counter[obj_name] += 1
+
+            if intersect(data_deque[id][0], data_deque[id][1], line2[0], line2[1]):
+                cv2.line(img, line2[0], line2[1], (255, 255, 255), 3)
+                if obj_name not in object_counter1:
+                    object_counter1[obj_name] = 1
+                else:
+                    object_counter1[obj_name] += 1
 
         try:
-            label = label + " " + str(sum(speed_line_queue[id])//len(speed_line_queue[id])) + "km/h"  # add speed to label
+            label = label + " " + str(sum(speed_line_queue[id]) //
+                                      len(speed_line_queue[id])) + "km/h"  # add speed to label
         except:
             pass
         UI_box(box, img, label=label, color=color, line_thickness=2)
@@ -257,16 +261,19 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         for idx, (key, value) in enumerate(object_counter1.items()):
             cnt_str = str(key) + ":" + str(value)
             cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
-            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
-            cv2.line(img, (width - 150, 65 + (idx*40)), (width, 65 + (idx*40)), [85, 45, 255], 30)
-            cv2.putText(img, cnt_str, (width - 150, 75 + (idx*40)), 0, 1, [255, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35),
+                        0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.line(img, (width - 150, 65 + (idx * 40)), (width, 65 + (idx * 40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str, (width - 150, 75 + (idx * 40)), 0, 1,
+                        [255, 255, 255], thickness=2, lineType=cv2.LINE_AA)
 
         for idx, (key, value) in enumerate(object_counter.items()):
             cnt_str1 = str(key) + ":" + str(value)
             cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
-            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
-            cv2.line(img, (20, 65 + (idx*40)), (127, 65 + (idx*40)), [85, 45, 255], 30)
-            cv2.putText(img, cnt_str1, (11, 75 + (idx*40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1,
+                        [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+            cv2.line(img, (20, 65 + (idx * 40)), (127, 65 + (idx * 40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str1, (11, 75 + (idx * 40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
 
     return img
 
