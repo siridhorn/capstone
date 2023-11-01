@@ -165,26 +165,26 @@ def ccw(A, B, C):
     return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
 
-def get_direction(point1, point2):
-    direction_str = ""
+# def get_direction(point1, point2):
+#     direction_str = ""
 
-    # calculate y axis direction
-    if point1[1] > point2[1]:
-        direction_str += "South"
-    elif point1[1] < point2[1]:
-        direction_str += "North"
-    else:
-        direction_str += ""
+#     # calculate y axis direction
+#     if point1[1] > point2[1]:
+#         direction_str += "South"
+#     elif point1[1] < point2[1]:
+#         direction_str += "North"
+#     else:
+#         direction_str += ""
 
-    # calculate x axis direction
-    if point1[0] > point2[0]:
-        direction_str += "East"
-    elif point1[0] < point2[0]:
-        direction_str += "West"
-    else:
-        direction_str += ""
+#     # calculate x axis direction
+#     if point1[0] > point2[0]:
+#         direction_str += "East"
+#     elif point1[0] < point2[0]:
+#         direction_str += "West"
+#     else:
+#         direction_str += ""
 
-    return direction_str
+#     return direction_str
 
 
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
@@ -260,6 +260,7 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
     # 4. Display Count in top right corner
         for idx, (key, value) in enumerate(object_counter1.items()):
             cnt_str = str(key) + ":" + str(value)
+            # print('Number of Vehicles Entering', cnt_str)
             cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
             cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35),
                         0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
@@ -269,6 +270,8 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
 
         for idx, (key, value) in enumerate(object_counter.items()):
             cnt_str1 = str(key) + ":" + str(value)
+            # print('Number of Vehicles Leaving', cnt_str1)
+
             cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
             cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1,
                         [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
@@ -329,7 +332,8 @@ class DetectionPredictor(BasePredictor):
             return log_string
         for c in det[:, 5].unique():
             n = (det[:, 5] == c).sum()  # detections per class
-            log_string += f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}, "
+            log_string += f"{int(c)}"
+            log_string += f" {n} {self.model.names[int(c)]}{'s' * (n > 1)}, "
         # write
         gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
         xywh_bboxs = []
