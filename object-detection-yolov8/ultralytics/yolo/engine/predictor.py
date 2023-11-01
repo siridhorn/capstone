@@ -236,8 +236,8 @@ class BasePredictor:
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 else:  # stream
                     fps, w, h = 30, im0.shape[1], im0.shape[0]
-                save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
-                self.vid_writer[idx] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                save_path = str(Path(save_path).with_suffix('.avi'))  # .avi output video 
+                self.vid_writer[idx] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'), fps, (w, h)) #This option is MPEG-4 and a preferred option if you want the resulting video size to be average. The file extension should be .avi
             self.vid_writer[idx].write(im0)
 
     def run_callbacks(self, event: str):
