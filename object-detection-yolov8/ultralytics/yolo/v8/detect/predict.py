@@ -398,9 +398,8 @@ class DetectionPredictor(BasePredictor):
         log_string += "%gx%g " % im.shape[2:]  # print string
         self.annotator = self.get_annotator(im0)
 
-        filter_values = [2, 3, 5, 7]  # filter Car, Motobike, Bus, Truck
         det = preds[idx]
-        det = det[np.isin(det[:, 5], filter_values)]
+        det = det[~(det[:, 5] == 0)]
         if len(det) == 0:
             return log_string
         for c in det[:, 5].unique():
@@ -413,9 +412,10 @@ class DetectionPredictor(BasePredictor):
         confs = []
         oids = []
         for *xyxy, conf, cls in reversed(det):
-            xywh_bboxs.append(xyxy_to_xywh(*xyxy))
-            confs.append([conf.item()])
-            oids.append(int(cls))
+            if int(cls) in [2, 3, 5, 7]: # Car, Motobike, Bus, Truck
+                xywh_bboxs.append(xyxy_to_xywh(*xyxy))
+                confs.append([conf.item()])
+                oids.append(int(cls))
         outputs = deepsort.update(
             torch.Tensor(xywh_bboxs), torch.Tensor(confs), oids, im0
         )

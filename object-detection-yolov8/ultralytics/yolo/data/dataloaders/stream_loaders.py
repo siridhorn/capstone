@@ -155,7 +155,7 @@ class LoadScreenshots:
 
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, imgsz=640, stride=32, auto=True, transforms=None, vid_stride=2):
+    def __init__(self, path, imgsz=640, stride=32, auto=True, transforms=None, vid_stride=1):
         if isinstance(path, str) and Path(path).suffix == ".txt":  # *.txt file with img/vid/dir on each line
             path = Path(path).read_text().rsplit()
         files = []
