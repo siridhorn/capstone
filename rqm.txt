@@ -1,0 +1,15 @@
+inference==0.9.8
+supervision==0.17.1
+tqdm==4.66.1
+ultralytics==8.1.5
+opencv-contrib-python==4.8.0.76
+opencv-python==4.8.0.76
+opencv-python-headless==4.8.1.78
+python-utils==3.8.1
+torch==2.1.0
+torchaudio==2.1.0
+torchdata==0.7.0
+torchsummary==1.5.1
+torchtext==0.16.0
+torchvision==0.16.0
+loguru==0.7.2
