@@ -28,7 +28,7 @@ ZONE_OUT_POLYGONS = [
 ]
 
 ZONE_IN_POLYGONS = [
-    np.array([[825, 415], [1535, 535], [1545, 365], [1170, 310]]),
+    np.array([[910, 385], [1530, 490], [1545, 365], [1170, 310]]),
     np.array([[1600, 680], [1760, 675], [1740, 565], [1585, 555]]),
     np.array([[0, 350], [0, 630], [505, 500], [95, 340]]),
 ]
@@ -36,7 +36,7 @@ ZONE_IN_POLYGONS = [
 # class_ids of interest - car, bus and truck
 CLASS_ID = [2, 5, 7]
 
-SOURCE_VIDEO_PATH = "siracha_day_5min.avi"
+SOURCE_VIDEO_PATH = "siracha_day_10min.avi"
 TARGET_VIDEO_PATH = f"C:/Sasa/Capstone/capstone/traffic_{today}.avi"
 
 
@@ -123,7 +123,6 @@ class VideoProcessor:
             with sv.VideoSink(
                 target_path=self.target_video_path,
                 video_info=self.video_info,
-                codec="divx",
             ) as sink:
                 for frame_number, frame in enumerate(
                     tqdm(frame_generator, total=self.video_info.total_frames)
