@@ -2,7 +2,7 @@ from datetime import date
 
 today = date.today()
 
-subsampling_rate = 10
+subsampling_rate = 2
 
 import argparse
 from typing import Dict, List, Set, Tuple
@@ -36,8 +36,8 @@ ZONE_IN_POLYGONS = [
 # class_ids of interest - car, bus and truck
 CLASS_ID = [2, 5, 7]
 
-SOURCE_VIDEO_PATH = "siracha_day_10min.avi"
-TARGET_VIDEO_PATH = f"C:/Sasa/Capstone/capstone/traffic_{today}.avi"
+SOURCE_VIDEO_PATH = "2023-02-15 17-40-00 192.168.1.142.avi"
+TARGET_VIDEO_PATH = f"C:/sasa/capstone/traffic_{today}.avi"
 
 
 class DetectionsManager:
