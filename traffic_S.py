@@ -22,17 +22,17 @@ model = YOLO(MODEL)
 model.fuse()
 
 # S
-# ZONE_OUT_POLYGONS = [
-#     np.array([[610, 295], [975, 340], [1100, 300], [875, 270]]),
-#     np.array([[1585, 555], [1740, 565], [1725, 435], [1575, 400]]),
-#     np.array([[0, 630], [1630, 1080], [1545, 690], [505, 500]]),
-# ]
+ZONE_OUT_POLYGONS = [
+    np.array([[485, 280], [975, 340], [1100, 300], [722, 252]]),
+    np.array([[1585, 555], [1740, 565], [1725, 435], [1575, 400]]),
+    np.array([[0, 630], [1630, 1080], [1545, 690], [505, 500]]),
+]
 
-# ZONE_IN_POLYGONS = [
-#     np.array([[910, 385], [1530, 490], [1545, 365], [1170, 310]]),
-#     np.array([[1600, 680], [1760, 675], [1740, 565], [1585, 555]]),
-#     np.array([[0, 350], [0, 630], [505, 500], [95, 340]]),
-# ]
+ZONE_IN_POLYGONS = [
+    np.array([[910, 385], [1530, 490], [1545, 365], [1170, 310]]),
+    np.array([[1600, 680], [1760, 675], [1740, 565], [1585, 555]]),
+    np.array([[0, 312], [0, 630], [505, 500], [24, 311]]),
+]
 
 # N_E
 # ZONE_OUT_POLYGONS = [
@@ -50,15 +50,15 @@ model.fuse()
 # ]
 
 # W
-ZONE_OUT_POLYGONS = [
-    np.array([[585, 80], [876, 133], [505, 284], [280, 133]]),
-    np.array([[505, 284], [1205, 507], [961, 1077], [1, 483]]),
-]
+# ZONE_OUT_POLYGONS = [
+#     np.array([[719, 105], [1003, 155], [593, 343], [365, 189]]),
+#     np.array([[1, 603], [593, 343], [1205, 507], [961, 1077]]),
+# ]
 
-ZONE_IN_POLYGONS = [
-    np.array([[876, 133], [1331, 219], [1205, 507], [505, 284]]),
-    np.array([[282, 133], [505, 284], [1, 483], [1, 178]]),
-]
+# ZONE_IN_POLYGONS = [
+#     np.array([[1003, 155], [1331, 219], [1205, 507], [593, 345]]),
+#     np.array([[1, 273], [365, 189], [593, 343], [1, 603]]),
+# ]
 
 # N
 # ZONE_OUT_POLYGONS = [
@@ -74,8 +74,8 @@ ZONE_IN_POLYGONS = [
 # class_ids of interest - car, bus and truck
 CLASS_ID = [2, 5, 7]
 
-SOURCE_VIDEO_PATH = "2024-03-01 08-00-00 192.168.1.145-W#5.avi"
-TARGET_VIDEO_PATH = f"C:/sasa/capstone/traffic_{today}_W.avi"
+SOURCE_VIDEO_PATH = "2024-03-01 08-00-00 192.168.1.142-S#5.avi"
+TARGET_VIDEO_PATH = f"C:/sasa/capstone/traffic_{today}_S.avi"
 
 
 class DetectionsManager:
